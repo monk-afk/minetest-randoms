@@ -7,4 +7,5 @@ monk <sub>(monk.moe @ [SquareOne](https://discord.gg/pE4Tu3cf23))</sub>
 ##
 None of these mods are guaranteed to function, its just random stuff I made
 
+Everything licensed under CC0, unless another license is provided in the provided folder.
 ##
