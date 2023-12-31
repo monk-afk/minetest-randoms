@@ -1,12 +1,11 @@
   -- debug_stats.lua //  monk @ SquareOne
-  --     dev_0.02 - Licensed by CC0
+  --     dev_0.01 - Licensed by CC0
   -- traverses the minetest debug.txt for player actions
   -- use cat and grep for keywords, ex:
   -- $ cat debug.txt | egrep " digs | places | joins | leaves | dies at | punched | mobs_ | hp\=10\) punched" | egrep -v "__builtin|worldedit|punched\s\w+\s\"carts:cart" > debug-dump.txt
   -- $ cat debug-dump.txt | sort -t"-" -k2n > debug-sort.txt
 local player_digputs = {}
 local debugfile = "debug-dump.txt"
-local playername = "monk"
 
 local function file_exists(file)
 	local f = io.open(file,"rb")
@@ -37,67 +36,68 @@ for line in io.lines(debugfile) do
 				"%s(%S+)"
 			)
 
-	if name == playername then
-		if not player_digputs[name] then
-			player_digputs[name] = {
-				dig = {},
-				put = {},
-				join = 0,
-				first = date,
-				pvp = {},
-				mob_hit = {},
-				hitby_mob = {},
-				die = {},
-			}
+-- if name == "monk" then
+	if not player_digputs[name] then
+		player_digputs[name] = {
+			dig = {},
+			put = {},
+			join = 0,
+			first = date,
+			pvp = {},
+			mob_kill = {},
+			killby_mob = {},
+			die = {},
+		}
+	end
+	local player = player_digputs[name]
+	if item == "joins" then
+		player.join = player.join + 1
+	end
+
+	if action == "places" then
+		if not player.put[item] then
+			player.put[item] = 0
 		end
-		local player = player_digputs[name]
-		if item == "joins" then
-			player.join = player.join + 1
-		end
+		player.put[item] = player.put[item] + 1
+	end
 	
-		if action == "places" then
-			if not player.put[item] then
-				player.put[item] = 0
-			end
-			player.put[item] = player.put[item] + 1
+	if action == "digs" then
+		if not player.dig[item] then
+			player.dig[item] = 0
 		end
-		
-		if action == "digs" then
-			if not player.dig[item] then
-				player.dig[item] = 0
-			end
-			player.dig[item] = player.dig[item] + 1
-		end
-	
-		if action == "dies" then
-			local item = tostring(gsub(item, "%.", ""))
-			if not player.die[date] then
-				player.die[date] = item
-			end
+		player.dig[item] = player.dig[item] + 1
+	end
+
+	if action == "dies" then
+		local item = tostring(gsub(item, "%.", ""))
+		if not player.die[date] then
 			player.die[date] = item
 		end
-	
-		if action == "punched" then
-			if match(name, "^mobs_.+") then
-				if not player.hitby_mob[name] then
-					player.hitby_mob[name] = 0
-				end
-				player.hitby_mob[name] = player.hitby_mob[name] + 1
-	
-			elseif match(item, "^mobs_.+") then
-				if not player.mob_hit[item] then
-					player.mob_hit[item] = 0
-				end
-				player.mob_hit[item] = player.mob_hit[item] + 1
-	
-			else
-				if not player.pvp[item] then
-					player.pvp[item] = 0
-				end
-				player.pvp[item] = player.pvp[item] + 1
+		player.die[date] = item
+	end
+
+	if action == "punched" then
+		if match(name, "^mobs_.+") then
+			if not player.killby_mob[name] then
+				player.killby_mob[name] = 0
 			end
+			player.killby_mob[name] = player.killby_mob[name] + 1
+
+		elseif match(item, "^mobs_.+") then
+			if not player.mob_kill[item] then
+				player.mob_kill[item] = 0
+			end
+			player.mob_kill[item] = player.mob_kill[item] + 1
+
+		else
+			if not player.pvp[item] then
+				player.pvp[item] = 0
+			end
+			player.pvp[item] = player.pvp[item] + 1
 		end
 	end
+
+-- end
 end
 
 
@@ -150,26 +150,27 @@ for name in pairs(player_digputs) do
 		print("    },")
 
 		print("    mobs = {")
-		print("        mobs_hit = {")
-		for mob_hit, count in pairs(player.mob_hit) do
+		print("        mobs_killed = {")
+		for mob_kill, count in pairs(player.mob_kill) do
 		tally = tally + count
-		print("            [\""..mob_hit.."\"] = "..count..",")
+		print("            [\""..mob_kill.."\"] = "..count..",")
 		end
-			print("                mob_hits = "..tally..",")
+			print("                mob_kills = "..tally..",")
 			print("        },")
 	tally = 0
 
-		print("        hits_from_mobs = {")
-		for hitby_mob, count in pairs(player.hitby_mob) do
+		print("        deathby_mobs = {")
+		for killby_mob, count in pairs(player.killby_mob) do
 		tally = tally + count
-		print("            [\""..hitby_mob.."\"] = "..count..",")
+		print("            [\""..killby_mob.."\"] = "..count..",")
 		end
-			print("                hits_from_mobs = "..tally..",")
+			print("                deathsby_mob = "..tally..",")
 			print("        },")
 	tally = 0
 			print("    },")
 		print("},\n")
 end
+
   -- Example output:
 --[[ 
 	monk = {
